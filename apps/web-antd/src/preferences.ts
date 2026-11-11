@@ -1,5 +1,4 @@
 import {
-  appCopyrightPreferences,
   defineOverridesPreferences,
   definePreferencesExtension,
 } from '@vben/preferences';
@@ -19,9 +18,23 @@ interface WebAntdPreferencesExtension {
 export const overridesPreferences = defineOverridesPreferences({
   // overrides
   app: {
-    name: import.meta.env.VITE_APP_TITLE,
+    accessMode: 'frontend',
+    defaultHomePath: '/admin/platform/overview/platform-dashboard',
+    name: '琢玉壹方后台',
   },
-  copyright: appCopyrightPreferences,
+  copyright: {
+    companyName: '琢玉壹方',
+    companySiteLink: '',
+    date: '2026',
+    enable: true,
+    icp: '',
+    icpLink: '',
+    settingShow: false,
+  },
+  logo: {
+    source: '/puyu-logo-icon.png',
+    sourceDark: '/puyu-logo-icon.png',
+  },
 });
 
 export const preferencesExtension =

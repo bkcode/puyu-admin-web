@@ -11,6 +11,8 @@ import { notification } from 'ant-design-vue';
 import { defineStore } from 'pinia';
 
 import { getAccessCodesApi, getUserInfoApi, loginApi, logoutApi } from '#/api';
+import { PermissionDataService } from '#/data/permissionDataService';
+import { isRealAdmin } from '#/data/realAdminApi';
 import { $t } from '#/locales';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -68,6 +70,15 @@ export const useAuthStore = defineStore('auth', () => {
           });
         }
       }
+    } catch (error) {
+      if (!isRealAdmin) throw error;
+      accessStore.setAccessToken(null);
+      PermissionDataService.clearCurrentUserPermissions();
+      notification.error({
+        message: '登录失败',
+        description:
+          error instanceof Error ? error.message : '请检查账号和密码后重试',
+      });
     } finally {
       loginLoading.value = false;
     }
@@ -84,6 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
       // 不做任何处理
     }
     resetAllStores();
+    PermissionDataService.clearCurrentUserPermissions();
     accessStore.setLoginExpired(false);
 
     // 回登录页带上当前路由地址

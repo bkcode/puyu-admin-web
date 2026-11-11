@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import type { NotificationItem } from '@vben/layouts';
 
+import type { AdminRole } from '#/router/routes/modules/puyu-admin';
+
 import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
-import { VBEN_DOC_URL, VBEN_GITHUB_URL } from '@vben/constants';
 import { useWatermark } from '@vben/hooks';
-import { BookOpenText, CircleHelp, SvgGithubIcon } from '@vben/icons';
 import {
   BasicLayout,
   LockScreen,
@@ -16,165 +16,107 @@ import {
 } from '@vben/layouts';
 import { preferences, usePreferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
-import { openWindow } from '@vben/utils';
 
-import { $t } from '#/locales';
+import { isRealAdmin } from '#/data/realAdminApi';
+import { permission } from '#/infrastructure/permission/permission';
+import { getAdminMenusByRole } from '#/router/routes/modules/puyu-admin';
 import { useAuthStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
 
-const notifications = ref<NotificationItem[]>([
-  {
-    id: 1,
-    avatar: 'https://avatar.vercel.sh/vercel.svg?text=VB',
-    date: '3小时前',
-    isRead: true,
-    message: '描述信息描述信息描述信息',
-    title: '收到了 14 份新周报',
-  },
-  {
-    id: 2,
-    avatar: 'https://avatar.vercel.sh/1',
-    date: '刚刚',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '朱偏右 回复了你',
-  },
-  {
-    id: 3,
-    avatar: 'https://avatar.vercel.sh/1',
-    date: '2024-01-01',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '曲丽丽 评论了你',
-  },
-  {
-    id: 4,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '代办提醒',
-  },
-  {
-    id: 5,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '跳转Workspace示例',
-    link: '/workspace',
-  },
-  {
-    id: 6,
-    avatar: 'https://avatar.vercel.sh/satori',
-    date: '1天前',
-    isRead: false,
-    message: '描述信息描述信息描述信息',
-    title: '跳转外部链接示例',
-    link: 'https://doc.vben.pro',
-  },
-]);
-
-const router = useRouter();
 const userStore = useUserStore();
+const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const accessStore = useAccessStore();
 const { destroyWatermark, updateWatermark } = useWatermark();
 const { isDark } = usePreferences();
-const showDot = computed(() =>
-  notifications.value.some((item) => !item.isRead),
-);
+function resolveInitialRole(): AdminRole {
+  if (isRealAdmin)
+    return permission.canManageMerchants() ? 'platform' : 'merchant';
+  return route.path.includes('/merchant/') ? 'merchant' : 'platform';
+}
 
-const menus = computed(() => [
+const selectedRole = ref<AdminRole>(resolveInitialRole());
+
+const notifications = ref<NotificationItem[]>([
   {
-    handler: () => {
-      router.push({ name: 'Profile' });
-    },
-    icon: 'lucide:user',
-    text: $t('page.auth.profile'),
+    avatar: '',
+    id: 1,
+    date: '刚刚',
+    isRead: false,
+    message: '有 3 个商家商品等待平台审核',
+    title: '商品审核待处理',
   },
   {
-    handler: () => {
-      openWindow(VBEN_DOC_URL, {
-        target: '_blank',
-      });
-    },
-    icon: BookOpenText,
-    text: $t('ui.widgets.document'),
+    avatar: '',
+    id: 2,
+    date: '10 分钟前',
+    isRead: false,
+    message: '工单 WO-20260829-001 已上传模型文件',
+    title: '模型交付待确认',
   },
   {
-    handler: () => {
-      openWindow(VBEN_GITHUB_URL, {
-        target: '_blank',
-      });
-    },
-    icon: SvgGithubIcon,
-    text: 'GitHub',
-  },
-  {
-    handler: () => {
-      openWindow(`${VBEN_GITHUB_URL}/issues`, {
-        target: '_blank',
-      });
-    },
-    icon: CircleHelp,
-    text: $t('ui.widgets.qa'),
+    avatar: '',
+    id: 3,
+    date: '今天 09:30',
+    isRead: false,
+    message: '商户 M-1002 的入驻资料需要补充',
+    title: '商户资料待完善',
   },
 ]);
-
-const avatar = computed(() => {
-  return userStore.userInfo?.avatar ?? preferences.app.defaultAvatar;
-});
+const showDot = computed(
+  () => !isRealAdmin && notifications.value.some((item) => !item.isRead),
+);
+const menus = computed(() => []);
+const avatar = computed(
+  () => userStore.userInfo?.avatar ?? preferences.app.defaultAvatar,
+);
 
 async function handleLogout() {
   await authStore.logout(false);
 }
-
 function handleNoticeClear() {
   notifications.value = [];
 }
-
 function markRead(id: number | string) {
-  const item = notifications.value.find((item) => item.id === id);
-  if (item) {
-    item.isRead = true;
-  }
+  const item = notifications.value.find((entry) => entry.id === id);
+  if (item) item.isRead = true;
 }
-
 function remove(id: number | string) {
-  notifications.value = notifications.value.filter((item) => item.id !== id);
+  notifications.value = notifications.value.filter((entry) => entry.id !== id);
 }
-
 function handleMakeAll() {
   notifications.value.forEach((item) => (item.isRead = true));
 }
 
-const viewAll = () => {};
-
-const handleClick = (item: NotificationItem) => {
-  // 如果通知项有链接，点击时跳转
-  if (item.link) {
-    navigateTo(item.link, item.query, item.state);
-  }
-};
-
-function navigateTo(
-  link: string,
-  query?: Record<string, any>,
-  state?: Record<string, any>,
-) {
-  if (link.startsWith('http://') || link.startsWith('https://')) {
-    // 外部链接，在新标签页打开
-    window.open(link, '_blank');
-  } else {
-    // 内部路由链接，支持 query 参数和 state
-    router.push({
-      path: link,
-      query: query || {},
-      state,
-    });
-  }
+function switchRole(role: AdminRole) {
+  if (isRealAdmin) return;
+  selectedRole.value = role;
+  void router.push(
+    role === 'platform'
+      ? '/admin/platform/overview/platform-dashboard'
+      : '/admin/merchant/catalog/product-list',
+  );
 }
+
+watch(
+  selectedRole,
+  (role) => {
+    accessStore.setAccessMenus(getAdminMenusByRole(role));
+  },
+  { immediate: true },
+);
+
+watch(
+  () => route.path,
+  (path) => {
+    if (isRealAdmin) return;
+    const role: AdminRole = path.includes('/merchant/')
+      ? 'merchant'
+      : 'platform';
+    if (selectedRole.value !== role) selectedRole.value = role;
+  },
+);
 
 watch(
   () => ({
@@ -187,49 +129,66 @@ watch(
       const watermarkColor = isDarkValue
         ? 'rgba(255, 255, 255, 0.12)'
         : 'rgba(0, 0, 0, 0.12)';
-
       await updateWatermark({
         advancedStyle: {
           colorStops: [
-            {
-              color: watermarkColor,
-              offset: 0,
-            },
-            {
-              color: watermarkColor,
-              offset: 1,
-            },
+            { color: watermarkColor, offset: 0 },
+            { color: watermarkColor, offset: 1 },
           ],
           type: 'linear',
         },
-        content:
-          content ||
-          `${userStore.userInfo?.username} - ${userStore.userInfo?.realName}`,
+        content: content || userStore.userInfo?.username || '琢玉壹方后台',
       });
-    } else {
-      destroyWatermark();
-    }
+    } else destroyWatermark();
   },
-  {
-    immediate: true,
-  },
+  { immediate: true },
 );
 </script>
 
 <template>
   <BasicLayout
     :avatar
-    :text="userStore.userInfo?.realName"
+    logo-src="/puyu-logo-icon.png"
+    logo-src-dark="/puyu-logo-icon.png"
+    logo-text="琢玉壹方后台"
+    :text="userStore.userInfo?.realName || '平台运营'"
     @clear-preferences-and-logout="handleLogout"
     @logout="handleLogout"
   >
+    <template #logo-text>琢玉壹方后台</template>
+    <template #header-right-1>
+      <div class="role-switcher" aria-label="后台角色切换">
+        <template v-if="isRealAdmin">
+          <span>{{
+            selectedRole === 'platform' ? '平台后台' : '商户后台'
+          }}</span>
+          <button type="button" @click="handleLogout">退出并切换账号</button>
+        </template>
+        <button
+          v-if="!isRealAdmin"
+          :class="{ active: selectedRole === 'platform' }"
+          type="button"
+          @click="switchRole('platform')"
+        >
+          平台后台
+        </button>
+        <button
+          v-if="!isRealAdmin"
+          :class="{ active: selectedRole === 'merchant' }"
+          type="button"
+          @click="switchRole('merchant')"
+        >
+          商户后台
+        </button>
+      </div>
+    </template>
     <template #user-dropdown>
       <UserDropdown
         :avatar
         :menus
-        :text="userStore.userInfo?.realName"
-        description="ann.vben@gmail.com"
-        tag-text="Pro"
+        :text="userStore.userInfo?.realName || '平台运营'"
+        description="琢玉壹方后台账号"
+        tag-text="后台"
         @clear-preferences-and-logout="handleLogout"
         @logout="handleLogout"
       />
@@ -237,13 +196,12 @@ watch(
     <template #notification>
       <Notification
         :dot="showDot"
-        :notifications="notifications"
+        :notifications="isRealAdmin ? [] : notifications"
         @clear="handleNoticeClear"
+        @make-all="handleMakeAll"
         @read="(item) => item.id && markRead(item.id)"
         @remove="(item) => item.id && remove(item.id)"
-        @make-all="handleMakeAll"
-        @on-click="handleClick"
-        @view-all="viewAll"
+        @view-all="() => undefined"
       />
     </template>
     <template #extra>
@@ -259,3 +217,36 @@ watch(
     </template>
   </BasicLayout>
 </template>
+
+<style scoped>
+.role-switcher {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  padding: 3px;
+  margin-right: 8px;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.role-switcher button {
+  padding: 5px 10px;
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.role-switcher button:hover {
+  color: #0f766e;
+}
+
+.role-switcher button.active {
+  font-weight: 600;
+  color: #0f766e;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 12%);
+}
+</style>

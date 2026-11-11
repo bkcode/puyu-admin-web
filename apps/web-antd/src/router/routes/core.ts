@@ -7,9 +7,11 @@ import { $t } from '#/locales';
 
 const BasicLayout = () => import('#/layouts/basic.vue');
 const AuthPageLayout = () => import('#/layouts/auth.vue');
+const AdminNotFoundPage = () =>
+  import('#/ui/pc-web-a/publicUi/not-found-page.vue');
 /** 全局404页面 */
 const fallbackNotFoundRoute: RouteRecordRaw = {
-  component: () => import('#/views/_core/fallback/not-found.vue'),
+  component: AdminNotFoundPage,
   meta: {
     hideInBreadcrumb: true,
     hideInMenu: true,
@@ -54,40 +56,6 @@ const coreRoutes: RouteRecordRaw[] = [
         component: () => import('#/views/_core/authentication/login.vue'),
         meta: {
           title: $t('page.auth.login'),
-        },
-      },
-      {
-        name: 'CodeLogin',
-        path: 'code-login',
-        component: () => import('#/views/_core/authentication/code-login.vue'),
-        meta: {
-          title: $t('page.auth.codeLogin'),
-        },
-      },
-      {
-        name: 'QrCodeLogin',
-        path: 'qrcode-login',
-        component: () =>
-          import('#/views/_core/authentication/qrcode-login.vue'),
-        meta: {
-          title: $t('page.auth.qrcodeLogin'),
-        },
-      },
-      {
-        name: 'ForgetPassword',
-        path: 'forget-password',
-        component: () =>
-          import('#/views/_core/authentication/forget-password.vue'),
-        meta: {
-          title: $t('page.auth.forgetPassword'),
-        },
-      },
-      {
-        name: 'Register',
-        path: 'register',
-        component: () => import('#/views/_core/authentication/register.vue'),
-        meta: {
-          title: $t('page.auth.register'),
         },
       },
     ],

@@ -1,23 +1,15 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
-
 import { AuthPageLayout } from '@vben/layouts';
-import { preferences } from '@vben/preferences';
-
-import { $t } from '#/locales';
-
-const appName = computed(() => preferences.app.name);
-const logo = computed(() => preferences.logo.source);
-const logoDark = computed(() => preferences.logo.sourceDark);
 </script>
 
 <template>
   <AuthPageLayout
-    :app-name="appName"
-    :logo="logo"
-    :logo-dark="logoDark"
-    :page-description="$t('authentication.pageDesc')"
-    :page-title="$t('authentication.pageTitle')"
+    app-name="琢玉壹方后台"
+    :copyright="false"
+    logo="/puyu-logo-icon.png"
+    logo-dark="/puyu-logo-icon.png"
+    page-description="平台与商家后台统一管理入口"
+    page-title="琢玉壹方后台"
   >
     <!-- 自定义工具栏 -->
     <!-- <template #toolbar></template> -->

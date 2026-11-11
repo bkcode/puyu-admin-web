@@ -1,0 +1,97 @@
+[
+  {
+    "name": "管理入账记录",
+    "menuKey": "billing:manage",
+    "labelKey": "admin.billing.manage"
+  },
+  {
+    "name": "编辑品牌",
+    "menuKey": "brand:edit",
+    "labelKey": "admin.brand.edit"
+  },
+  {
+    "name": "提交目录审核",
+    "menuKey": "catalog:submit",
+    "labelKey": "admin.catalog.submit"
+  },
+  {
+    "name": "维护商户分类",
+    "menuKey": "category:edit",
+    "labelKey": "admin.category.edit"
+  },
+  {
+    "name": "分类审核",
+    "menuKey": "category:review",
+    "labelKey": "admin.category.review"
+  },
+  {
+    "name": "管理合作关系",
+    "menuKey": "cooperation:manage",
+    "labelKey": "admin.cooperation.manage"
+  },
+  {
+    "name": "管理服务额度",
+    "menuKey": "credits:manage",
+    "labelKey": "admin.credits.manage"
+  },
+  {
+    "name": "管理设计师",
+    "menuKey": "designer:manage",
+    "labelKey": "admin.designer.manage"
+  },
+  {
+    "name": "库存维护",
+    "menuKey": "inventory:manage",
+    "labelKey": "admin.inventory.manage"
+  },
+  {
+    "name": "商户入驻维护",
+    "menuKey": "merchant:manage",
+    "labelKey": "admin.merchant.manage"
+  },
+  {
+    "name": "订单处理",
+    "menuKey": "order:manage",
+    "labelKey": "admin.order.manage"
+  },
+  {
+    "name": "后台页面",
+    "menuKey": "page:view",
+    "labelKey": "admin.page.view"
+  },
+  {
+    "name": "编辑商品",
+    "menuKey": "product:edit",
+    "labelKey": "admin.product.edit"
+  },
+  {
+    "name": "商品列表",
+    "menuKey": "product:list:view",
+    "labelKey": "admin.product.list"
+  },
+  {
+    "name": "下架商品",
+    "menuKey": "product:offline",
+    "labelKey": "admin.product.offline"
+  },
+  {
+    "name": "发布商品",
+    "menuKey": "product:publish",
+    "labelKey": "admin.product.publish"
+  },
+  {
+    "name": "管理基础设置",
+    "menuKey": "settings:manage",
+    "labelKey": "admin.settings.manage"
+  },
+  {
+    "name": "处理工单",
+    "menuKey": "workorder:process",
+    "labelKey": "admin.workorder.process"
+  },
+  {
+    "name": "商户工单维护",
+    "menuKey": "workorder:submit",
+    "labelKey": "admin.workorder.submit"
+  }
+]

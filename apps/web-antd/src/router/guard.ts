@@ -5,6 +5,8 @@ import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { startProgress, stopProgress } from '@vben/utils';
 
+import { isRealAdmin } from '#/data/realAdminApi';
+import { permission } from '#/infrastructure/permission/permission';
 import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
 
@@ -87,12 +89,23 @@ function setupAccessGuard(router: Router) {
 
     // 是否已经生成过动态路由
     if (accessStore.isAccessChecked) {
+      if (
+        isRealAdmin &&
+        ((to.path.startsWith('/admin/platform/') &&
+          !permission.canManageMerchants()) ||
+          (to.path.startsWith('/admin/merchant/') &&
+            !permission.canEditProduct()))
+      ) {
+        return userStore.userInfo?.homePath || LOGIN_PATH;
+      }
       return true;
     }
 
     // 生成路由表
     // 当前登录用户拥有的角色标识列表
-    const userInfo = userStore.userInfo || (await authStore.fetchUserInfo());
+    const userInfo = isRealAdmin
+      ? await authStore.fetchUserInfo()
+      : userStore.userInfo || (await authStore.fetchUserInfo());
     const userRoles = userInfo.roles ?? [];
 
     // 生成菜单和路由

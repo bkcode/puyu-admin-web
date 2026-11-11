@@ -3,12 +3,14 @@ import { createApp, watchEffect } from 'vue';
 import { registerAccessDirective } from '@vben/access';
 import { registerLoadingDirective } from '@vben/common-ui/es/loading';
 import { preferences } from '@vben/preferences';
-import { initStores } from '@vben/stores';
+import { initStores, useAccessStore } from '@vben/stores';
 import '@vben/styles';
 import '@vben/styles/antd';
 
 import { useTitle } from '@vueuse/core';
 
+import { PermissionDataService } from '#/data/permissionDataService';
+import { configureRealTokenProvider, isRealAdmin } from '#/data/realAdminApi';
 import { $t, setupI18n } from '#/locales';
 
 import { initComponentAdapter } from './adapter/component';
@@ -45,6 +47,17 @@ async function bootstrap(namespace: string) {
 
   // 配置 pinia-tore
   await initStores(app, { namespace });
+  configureRealTokenProvider(() => useAccessStore().accessToken);
+
+  // 预加载本地权限快照；真实 Admin BFF 接入后由数据层替换 mock adapter。
+  if (!isRealAdmin || useAccessStore().accessToken) {
+    try {
+      await PermissionDataService.loadCurrentUserPermissions();
+    } catch {
+      useAccessStore().setAccessToken(null);
+      PermissionDataService.clearCurrentUserPermissions();
+    }
+  }
 
   // 安装权限指令
   registerAccessDirective(app);
