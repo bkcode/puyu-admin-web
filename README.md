@@ -31,11 +31,24 @@ mise exec node@24.18.0 -- corepack pnpm permissions:check
 使用`mise exec node@24.18.0 -- node tools/dev-real.mjs`启动，访问`http://127.0.0.1:5666/`。
 普通`dev:antd`仍为Mock入口；切换模式需重新启动开发服务，两个模式的会话命名空间隔离。
 
+真实模式默认代理到`http://127.0.0.1:9988`；连接已获批准的其他Gateway时，仅在本地开发服务器启动环境设置`PUYU_GATEWAY_URL`：
+
+```bash
+PUYU_GATEWAY_URL='https://gateway.example.test' mise exec node@24.18.0 -- node tools/dev-real.mjs
+```
+
+示例域名须替换为实际获准的Gateway根origin（HTTP或HTTPS，可含端口，可有末尾`/`）。不接受用户名/密码、业务路径、query或fragment；配置错误将拒绝启动，不静默回退本机。
+
+该变量仅在真实模式由Vite服务器读取，统一用于`/admin-api`与固定`/auth-api/v1/oauth2/token`代理；浏览器仍只请求本地同源路径，不把目标放进`VITE_*`、浏览器配置或源码，不改变Mock入口和生产BFF地址。
+
+更改目标后需正常重启本地开发服务器；不要同时启动另一实例抢占5666端口，也不需要重启后端。客户端密钥仍使用既有批准的服务器端凭据注入；选择Gateway不代表批准更改服务器、账号、CORS或回调配置。
+
 真实模式的菜单和操作由`/admin-api/v1/catalog/actor`实际身份决定，不能用顶部切换按钮变更权限。
 首次平台账号使用本地初始化生成的验收管理员；商户账号通过平台入驻产生，初始密码沿用后端手机号后8位规则。
 真实表单带记录ID和version；保存失败保留输入，SKU仅在当前商品详情维护，不能通过SKU编辑直接改已有库存。
 
 开发代理仅将OAuth客户端密钥注入固定Gateway token路径，**不得将密钥放入VITE变量或客户端源码**；不是生产认证方案。
+凭据桥接只接受原始URL精确等于`/auth-api/v1/oauth2/token`的`POST`；后缀、末尾斜杠、query、编码后缀和其他方法在代理前拒绝，不向上游注入客户端凭据。
 本机5666代理仅接受精确loopback Host/Origin并拒绝cross-site请求；校验后移除上游Origin，将浏览器同源请求转换为开发服务器到Gateway请求，避免后端精确CORS误拒。规则在`tools/local-proxy-origin.ts`，不改变Gateway/Auth的CORS配置。
 `tools/check-real-bundle-secrets.mjs`检查构建产物没有本地服务器凭据，`tools/vitest-real.config.ts`包含接口与身份边界的隔离测试。
 测试命令：`mise exec node@24.18.0 -- corepack pnpm exec vitest run --config tools/vitest-real.config.ts`。
