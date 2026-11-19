@@ -61,3 +61,8 @@ skills-lock.json
 .atomcode
 datalog
 .playwright-mcp
+
+# Cloudflare Pages local runtime secrets and state
+.dev.vars
+.dev.vars.*
+.wrangler/
