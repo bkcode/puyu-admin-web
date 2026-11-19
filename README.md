@@ -29,9 +29,9 @@ mise exec node@24.18.0 -- corepack pnpm permissions:check
 
 `apps/web-antd/.env.production`显式启用`VITE_PUYU_DATA_MODE=real`，`VITE_GLOB_API_URL=https://api.zyyfdesign.top`只表示公开Gateway根origin。真实业务请求实际由`data/adminApiOrigin.ts`构造为`https://api.zyyfdesign.top/admin-api/v1/**`，允许根地址末尾斜杠并规范化；非HTTPS、凭据、业务路径、query或fragment将拒绝请求。开发模式继续请求同源`/admin-api/v1/**`，保留下文Vite安全代理。
 
-登录和刷新仍请求前端同源的固定`POST /auth-api/v1/oauth2/token`服务端认证桥。正式静态托管必须另外配置可信服务端入口，在服务器端安全注入confidential客户端凭据，并严格限定目标路径/方法与站点来源；客户端不得持有secret。API origin不是OAuth issuer，不能用修改API域名替代认证部署。
+正式登录和刷新使用独立的`VITE_AUTH_API_URL=https://auth.zyyfdesign.top`，固定请求`POST https://auth.zyyfdesign.top/oauth2/token`，分别发送原有`password`和`refresh_token`表单。Auth地址同样只接受无凭据、路径、query或fragment的HTTPS根origin；缺失或错误配置在发送密码/令牌前拒绝。API与Auth地址分别校验，不互相回退。浏览器不发送Basic、client_id、client_secret或Cookie；客户端密钥只留在自有Auth服务端，现有手机号密码界面和本地滑块校验保持不变，不增加SSO。
 
-正式Cloudflare托管使用下方“Cloudflare Pages 正式登录桥”中的Functions实现；Vite开发凭据桥仍只用于本地开发。`scripts/deploy/nginx.conf`仅提供静态文件，不能替代该认证桥。必须包含Functions部署并正确绑定生产运行时Secret后，再验证登录/刷新；不把本地开发secret打入构建。生产业务跨域还依赖Gateway允许实际前端origin和Authorization请求头。
+Auth必须先部署并启用仅允许精确`https://admin.zyyfdesign.top` Origin和上述两种grant的浏览器适配，仍通过原`puyu-admin`客户端和账号密码、角色、受众校验；见下方“Cloudflare Pages 静态托管与自有Auth”。后端生效后才能交付使用独立Auth地址的前端。生产业务跨域仍依赖Gateway允许实际前端origin和Authorization请求头。
 
 ### 本地真实模式
 
@@ -303,19 +303,16 @@ If you think this project is helpful to you, you can help the author buy a cup o
 [MIT © Vben-2020](./LICENSE)
 
 
-## Cloudflare Pages 正式登录桥
+## Cloudflare Pages 静态托管与自有Auth
 
-正式 Admin 的登录和刷新请求保持同源 `POST /auth-api/v1/oauth2/token`。仓库根目录 `functions/auth-api/v1/oauth2/token.ts` 提供 Pages Function，固定转发到 `https://api.zyyfdesign.top/auth-api/v1/oauth2/token`；只在服务端为既有 `puyu-admin` 客户端添加认证。业务请求仍直接使用生产 Gateway 的 `/admin-api/v1/**`。
+Cloudflare Pages 只托管Admin静态页面，生产登录与刷新直连自有Auth的`/oauth2/token`。旧的`functions/auth-api/v1/oauth2/token.ts`和仅用于该函数的`public/_routes.json`已退役，Cloudflare运行时不再需要`PUYU_ADMIN_CLIENT_SECRET`或其他认证Secret。
 
 Cloudflare Pages 配置：
 
 - Git 仓库：`bkcode/puyu-admin-web`，生产分支：`main`。
 - 根目录：仓库根（留空）。构建：`pnpm -F @vben/web-antd build`，输出：`apps/web-antd/dist`。
-- **生产运行时 Secret**：`PUYU_ADMIN_CLIENT_SECRET`，值必须是 Auth 当前已登记的 `puyu-admin` 客户端密钥。不要生成另一串随机值，也不要重置 Auth client。
-- Secret 在 Pages 项目的 **Settings → Variables and Secrets** 添加，类型选择 **Secret**，环境选择 **Production**；更新后重新部署才能让 Functions 使用新绑定。它不是 `VITE_*` 环境变量，不应进入浏览器源码或提交记录。
+- 构建中的两个公开地址分别为`VITE_GLOB_API_URL=https://api.zyyfdesign.top`与`VITE_AUTH_API_URL=https://auth.zyyfdesign.top`。它们均为公开HTTPS根origin，不能填入密钥、用户名或业务路径。
 
-`functions/` 必须留在项目根目录，不要放进 `dist` 或把构建根改成 `apps/web-antd`。`apps/web-antd/public/_routes.json` 随构建复制到输出目录，仅对固定 token 路径启用函数。Git 集成部署支持 Functions；仅上传静态目录的方式不能代替包含该函数的部署。
+自有Auth的普通密码登录配置归`puyu-auth`：保持现有机密`puyu-admin`客户端及其服务端`puyu.auth.admin-client-secret`，启用`puyu.auth.admin-browser-token-enabled`并在`puyu.auth.admin-browser-origins`精确配置`https://admin.zyyfdesign.top`。该适配默认关闭；启用后仅受限地为允许Origin的password/refresh表单补全服务端客户端认证，继续执行现有OAuth与账号权限校验。不要重置客户端、签名Key或把服务端密钥复制到CF/`VITE_*`/浏览器。具体后端配置与部署需按任务契约批准，先验证Auth生效，再交付前端main。
 
-该桥只接受 `https://admin.zyyfdesign.top` 的同源浏览器请求。预览域名、缺失/未知 Origin、其它 grant/客户端参数、非表单、过大请求、上游重定向和非 JSON 响应都会被拒绝。缺少运行时 Secret 返回可识别的 503，不能通过把密钥改为 `VITE_PUYU_ADMIN_CLIENT_SECRET` 来绕过。固定上游和请求头白名单避免将凭据转发到调用者指定的地址；响应禁止缓存，不回传上游 Cookie。
-
-本地开发继续使用 `tools/dev-real.mjs` 和 Vite 的受限同源代理；`.dev.vars` / `.wrangler` 已忽略，不要在其中的值复制到文档、日志或 Git。页面正常加载不等于登录链路通过，部署后还需正常登录、受保护 actor 读取与刷新验证。
+本地开发继续使用`tools/dev-real.mjs`和Vite的受限同源`/auth-api/v1/oauth2/token`代理；`.dev.vars` / `.wrangler`继续忽略。部署后的验收包括正常密码登录、受保护actor读取和刷新；静态页面正常加载或本地隔离测试通过不等于正式认证已验收。
