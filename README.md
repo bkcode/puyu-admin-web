@@ -31,7 +31,7 @@ mise exec node@24.18.0 -- corepack pnpm permissions:check
 
 登录和刷新仍请求前端同源的固定`POST /auth-api/v1/oauth2/token`服务端认证桥。正式静态托管必须另外配置可信服务端入口，在服务器端安全注入confidential客户端凭据，并严格限定目标路径/方法与站点来源；客户端不得持有secret。API origin不是OAuth issuer，不能用修改API域名替代认证部署。
 
-当前仓库只有Vite开发凭据桥，未包含正式serverless认证代理；`scripts/deploy/nginx.conf`仅提供静态文件，不能完成该认证桥。纯静态部署可加载真实模式登录页面，但在可信服务端桥配置并验证前，正式登录/刷新不算可用。本轮未修改Auth客户端或新增服务端桥，也不把本地开发secret打入构建。生产业务跨域还依赖Gateway允许实际前端origin和Authorization请求头。
+正式Cloudflare托管使用下方“Cloudflare Pages 正式登录桥”中的Functions实现；Vite开发凭据桥仍只用于本地开发。`scripts/deploy/nginx.conf`仅提供静态文件，不能替代该认证桥。必须包含Functions部署并正确绑定生产运行时Secret后，再验证登录/刷新；不把本地开发secret打入构建。生产业务跨域还依赖Gateway允许实际前端origin和Authorization请求头。
 
 ### 本地真实模式
 
@@ -301,3 +301,21 @@ If you think this project is helpful to you, you can help the author buy a cup o
 ## License
 
 [MIT © Vben-2020](./LICENSE)
+
+
+## Cloudflare Pages 正式登录桥
+
+正式 Admin 的登录和刷新请求保持同源 `POST /auth-api/v1/oauth2/token`。仓库根目录 `functions/auth-api/v1/oauth2/token.ts` 提供 Pages Function，固定转发到 `https://api.zyyfdesign.top/auth-api/v1/oauth2/token`；只在服务端为既有 `puyu-admin` 客户端添加认证。业务请求仍直接使用生产 Gateway 的 `/admin-api/v1/**`。
+
+Cloudflare Pages 配置：
+
+- Git 仓库：`bkcode/puyu-admin-web`，生产分支：`main`。
+- 根目录：仓库根（留空）。构建：`pnpm -F @vben/web-antd build`，输出：`apps/web-antd/dist`。
+- **生产运行时 Secret**：`PUYU_ADMIN_CLIENT_SECRET`，值必须是 Auth 当前已登记的 `puyu-admin` 客户端密钥。不要生成另一串随机值，也不要重置 Auth client。
+- Secret 在 Pages 项目的 **Settings → Variables and Secrets** 添加，类型选择 **Secret**，环境选择 **Production**；更新后重新部署才能让 Functions 使用新绑定。它不是 `VITE_*` 环境变量，不应进入浏览器源码或提交记录。
+
+`functions/` 必须留在项目根目录，不要放进 `dist` 或把构建根改成 `apps/web-antd`。`apps/web-antd/public/_routes.json` 随构建复制到输出目录，仅对固定 token 路径启用函数。Git 集成部署支持 Functions；仅上传静态目录的方式不能代替包含该函数的部署。
+
+该桥只接受 `https://admin.zyyfdesign.top` 的同源浏览器请求。预览域名、缺失/未知 Origin、其它 grant/客户端参数、非表单、过大请求、上游重定向和非 JSON 响应都会被拒绝。缺少运行时 Secret 返回可识别的 503，不能通过把密钥改为 `VITE_PUYU_ADMIN_CLIENT_SECRET` 来绕过。固定上游和请求头白名单避免将凭据转发到调用者指定的地址；响应禁止缓存，不回传上游 Cookie。
+
+本地开发继续使用 `tools/dev-real.mjs` 和 Vite 的受限同源代理；`.dev.vars` / `.wrangler` 已忽略，不要在其中的值复制到文档、日志或 Git。页面正常加载不等于登录链路通过，部署后还需正常登录、受保护 actor 读取与刷新验证。
