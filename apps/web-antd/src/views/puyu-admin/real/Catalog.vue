@@ -34,6 +34,7 @@ import {
 } from 'ant-design-vue';
 
 import { RealAdminService } from '#/application/realAdminService';
+import { publicImagePreview } from '#/data/publicImageUploadApi';
 import {
   buildSkuInput,
   skuSpecificationLabels,
@@ -43,7 +44,7 @@ import ApiErrorDialog from '#/ui/pc-web-a/publicUi/api-error-dialog.vue';
 
 import CatalogBatch from './CatalogBatch.vue';
 import CatalogWorkbook from './CatalogWorkbook.vue';
-import ImageUpload from './ImageUpload.vue';
+import PublicImageUpload from './PublicImageUpload.vue';
 
 const props = defineProps<{ pageId: string }>();
 const route = useRoute();
@@ -63,6 +64,8 @@ const fullForm = computed(
 const fullDetail = computed(() => props.pageId === 'product-detail');
 const loading = ref(false);
 const saving = ref(false);
+const imageBusy = ref(false);
+const imageScope = ref(0);
 const errorMessage = ref('');
 const rows = ref<Catalog[]>([]);
 const current = ref<Catalog>();
@@ -226,7 +229,9 @@ const categoryOptions = computed(() =>
   categories.value
     .filter((item) => item.id !== current.value?.id)
     .map((item) => ({
-      label: `${'　'.repeat((item.level ?? 1) - 1)}${item.name}（${item.code}）`,
+      label: `${'　'.repeat((item.level ?? 1) - 1)}${item.name}（${
+        item.code
+      }）`,
       value: item.id,
     })),
 );
@@ -247,14 +252,16 @@ function fail(exception: unknown) {
     exception instanceof Error ? exception.message : '请求失败，请重试';
 }
 function fill(item?: Catalog) {
+  imageScope.value += 1;
+  imageBusy.value = false;
   const next = blank();
   if (item)
     for (const key of Object.keys(next) as (keyof CatalogInput)[])
-      Object.assign(next, { [key]: item[key] });
-  else if (kind.value === 'PRODUCT')
-    next.parameters = [
-      { key: 'material', name: '材质', value: '', unit: '', visible: true },
-    ];
+      if (item[key] !== undefined) Object.assign(next, { [key]: item[key] });
+      else if (kind.value === 'PRODUCT')
+        next.parameters = [
+          { key: 'material', name: '材质', value: '', unit: '', visible: true },
+        ];
   Object.assign(form, JSON.parse(JSON.stringify(next)));
 }
 async function refreshList() {
@@ -303,6 +310,8 @@ async function refreshWorkbook(_result: unknown, productId: null | string) {
   }
 }
 async function load() {
+  imageScope.value += 1;
+  imageBusy.value = false;
   selectedKeys.value = [];
   current.value = undefined;
   editorOpen.value = false;
@@ -370,6 +379,8 @@ async function editItem(item?: Catalog) {
   editorOpen.value = true;
 }
 async function save() {
+  if (loading.value || saving.value || imageBusy.value || !canEdit.value)
+    return;
   try {
     await formRef.value?.validate();
   } catch (error) {
@@ -377,6 +388,8 @@ async function save() {
       error instanceof Error ? error.message : '请完善必填字段并检查价格格式';
     return;
   }
+  if (loading.value || saving.value || imageBusy.value || !canEdit.value)
+    return;
   saving.value = true;
   try {
     const content = JSON.parse(JSON.stringify(form)) as CatalogInput;
@@ -840,11 +853,22 @@ watch(() => [props.pageId, route.query.id], load, { immediate: true });
               : '分类图标'
         "
       >
-        <ImageUpload
-          v-model="form.imageFileIds"
-          :multiple="kind === 'PRODUCT'"
+        <PublicImageUpload
+          :key="imageScope"
+          v-model="form.imageUrls"
+          :scope="imageScope"
+          :legacy-count="form.imageFileIds.length"
+          :max="20"
+          :disabled="loading || saving || !canEdit"
+          @busy="imageBusy = $event"
           @error="errorMessage = $event"
         />
+        <p
+          v-if="form.imageFileIds.length"
+          class="text-xs text-muted-foreground"
+        >
+          原图片文件ID：{{ form.imageFileIds.join('、') }}（继续保留）
+        </p>
       </Form.Item>
       <template v-if="kind === 'PRODUCT'">
         <h3 class="mb-3 font-medium">商品参数</h3>
@@ -911,7 +935,12 @@ watch(() => [props.pageId, route.query.id], load, { immediate: true });
       </Form.Item>
     </Form>
     <Space>
-      <Button type="primary" :loading="saving" @click="save">
+      <Button
+        type="primary"
+        :loading="saving"
+        :disabled="loading || imageBusy || !canEdit"
+        @click="save"
+      >
         保存{{ noun }}
 </Button><Button
         :disabled="saving"
@@ -948,6 +977,23 @@ watch(() => [props.pageId, route.query.id], load, { immediate: true });
       </Descriptions.Item>
       <Descriptions.Item label="平台处理原因" :span="2">
         {{ current.processReason || '—' }}
+      </Descriptions.Item>
+      <Descriptions.Item label="公开图片" :span="2">
+        <div class="flex flex-wrap gap-3">
+          <template
+            v-for="(url, index) in current.imageUrls ?? []"
+            :key="`${index}:${url}`"
+          >
+            <img
+              v-if="publicImagePreview(url)"
+              :src="publicImagePreview(url)"
+              alt="公开图片"
+              class="h-24 w-24 object-contain"
+            />
+            <span v-else>原有图片地址（继续保留）</span>
+          </template>
+          <span v-if="!current.imageUrls?.length">无公开图片</span>
+        </div>
       </Descriptions.Item>
       <Descriptions.Item label="图片文件ID" :span="2">
         {{ current.imageFileIds.join('、') || '未上传' }}

@@ -16,6 +16,7 @@ export const realPageIds = new Set([
   'cooperation-qrcode',
   'inventory-list',
   'merchant-dashboard',
+  'merchant-store-settings',
   'merchant-workorder-detail',
   'merchant-workorder-form',
   'merchant-workorder-list',
@@ -173,6 +174,16 @@ const merchantMenu = [
     'merchant-workorder-detail',
     'merchant-workorder-form',
   ]),
+  ...(isRealAdmin
+    ? [
+        menuGroup(
+          'PuyuAdminMerchantSettings',
+          'merchant/settings',
+          '门店设置',
+          ['merchant-store-settings'],
+        ),
+      ]
+    : []),
 ];
 
 function toMenuRecord(

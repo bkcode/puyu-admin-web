@@ -88,6 +88,7 @@ type PermissionFacade = {
   canManageMerchants: PermissionChecker;
   canManageOrders: PermissionChecker;
   canManageSettings: PermissionChecker;
+  canManageStoreSettings: PermissionChecker;
   canOfflineProduct: PermissionChecker;
   canProcessWorkorder: PermissionChecker;
   canPublishProduct: PermissionChecker;
@@ -104,6 +105,7 @@ export const permission: PermissionFacade = {
   canManageCredits: createChecker('canManageCredits'),
   canManageBilling: createChecker('canManageBilling'),
   canManageSettings: createChecker('canManageSettings'),
+  canManageStoreSettings: createChecker('canManageStoreSettings'),
   canManageInventory: createChecker('canManageInventory'),
   canManageOrders: createChecker('canManageOrders'),
   canSubmitWorkorder: createChecker('canSubmitWorkorder'),

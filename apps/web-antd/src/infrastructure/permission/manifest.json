@@ -112,5 +112,11 @@
     "name": "处理工单",
     "menuKey": "workorder:process",
     "labelKey": "admin.workorder.process"
+  },
+  {
+    "methodName": "canManageStoreSettings",
+    "name": "管理本店设置",
+    "menuKey": "store:settings:manage",
+    "labelKey": "admin.store.settings.manage"
   }
 ]

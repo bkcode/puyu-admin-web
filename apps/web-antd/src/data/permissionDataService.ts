@@ -52,6 +52,7 @@ export const PermissionDataService = {
               'catalog:submit',
               'inventory:manage',
               'order:manage',
+              'store:settings:manage',
               'workorder:submit',
             ];
       const snapshot: PermissionSnapshot = {
