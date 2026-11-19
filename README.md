@@ -1,6 +1,6 @@
 ## Puyu Admin Web（PC Web - A）
 
-本目录保留 Vben Admin 5.x 的上游模板能力，并在 `apps/web-antd` 中实现琢玉壹方 PC Web - A。页面来源为 [`projects/puyu-admin/docs/page-specs`](../puyu-admin/docs/page-specs)。默认保留local mock；32个业务页均有真实模式入口（平台17/商户15），不等于全部操作实机通过。当前功能、运行版本与待验项目以[现役验收总表](../../docs/harness/puyu-p0-acceptance-status.md)为准，下文日期段落是分批历史证据。
+本目录保留 Vben Admin 5.x 的上游模板能力，并在 `apps/web-antd` 中实现琢玉壹方 PC Web - A。页面来源为 [`projects/puyu-admin/docs/page-specs`](../puyu-admin/docs/page-specs)。本地开发默认保留local mock，production默认真实模式；32个业务页均有真实模式入口（平台17/商户15），不等于全部操作实机通过。当前功能、运行版本与待验项目以[现役验收总表](../../docs/harness/puyu-p0-acceptance-status.md)为准，下文日期段落是分批历史证据。
 
 分层约定：
 
@@ -24,6 +24,14 @@ mise exec node@24.18.0 -- corepack pnpm -F @vben/web-antd typecheck
 mise exec node@24.18.0 -- corepack pnpm -F @vben/web-antd build
 mise exec node@24.18.0 -- corepack pnpm permissions:check
 ```
+
+### 正式构建与认证边界
+
+`apps/web-antd/.env.production`显式启用`VITE_PUYU_DATA_MODE=real`，`VITE_GLOB_API_URL=https://api.zyyfdesign.top`只表示公开Gateway根origin。真实业务请求实际由`data/adminApiOrigin.ts`构造为`https://api.zyyfdesign.top/admin-api/v1/**`，允许根地址末尾斜杠并规范化；非HTTPS、凭据、业务路径、query或fragment将拒绝请求。开发模式继续请求同源`/admin-api/v1/**`，保留下文Vite安全代理。
+
+登录和刷新仍请求前端同源的固定`POST /auth-api/v1/oauth2/token`服务端认证桥。正式静态托管必须另外配置可信服务端入口，在服务器端安全注入confidential客户端凭据，并严格限定目标路径/方法与站点来源；客户端不得持有secret。API origin不是OAuth issuer，不能用修改API域名替代认证部署。
+
+当前仓库只有Vite开发凭据桥，未包含正式serverless认证代理；`scripts/deploy/nginx.conf`仅提供静态文件，不能完成该认证桥。纯静态部署可加载真实模式登录页面，但在可信服务端桥配置并验证前，正式登录/刷新不算可用。本轮未修改Auth客户端或新增服务端桥，也不把本地开发secret打入构建。生产业务跨域还依赖Gateway允许实际前端origin和Authorization请求头。
 
 ### 本地真实模式
 

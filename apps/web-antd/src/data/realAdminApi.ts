@@ -4,6 +4,7 @@ import {
 } from '#/infrastructure/cache/cacherManager';
 import { shanghaiDate } from '#/infrastructure/time/shanghaiTime';
 
+import { adminApiUrl } from './adminApiOrigin';
 import { serializeSkuInput } from './skuSpecifications';
 
 export const isRealAdmin = import.meta.env.VITE_PUYU_DATA_MODE === 'real';
@@ -21,6 +22,7 @@ export type MerchantInput = {
   introduction: string;
   loginPhone: string;
   logoFileId?: null | string;
+  logoUrl?: null | string;
   name: string;
   phone: string;
   remark: string;
@@ -132,6 +134,12 @@ export function configureRealTokenProvider(provider: typeof tokenProvider) {
   tokenProvider = provider;
 }
 
+// Opaque guard: callers can discard old work without exposing credentials.
+export function captureAdminSession() {
+  const token = tokenProvider();
+  return () => !!token && tokenProvider() === token;
+}
+
 export class AdminApiError extends Error {
   constructor(
     message: string,
@@ -159,13 +167,21 @@ export async function adminRequest<T>(
   method = body === undefined ? 'GET' : 'POST',
 ): Promise<T> {
   if (!isRealAdmin) throw new AdminApiError('当前未启用真实服务模式', 'MODE');
-  if (!path.startsWith('/catalog/') && !path.startsWith('/business/'))
+  if (
+    !path.startsWith('/catalog/') &&
+    !path.startsWith('/business/') &&
+    !(
+      path === '/uploads/images' &&
+      method === 'POST' &&
+      body instanceof FormData
+    )
+  )
     throw new Error('Unsupported admin surface');
   const token = tokenProvider();
   if (!token) throw new AdminApiError('请先登录后台', '401');
   const form = body instanceof FormData;
   return unwrap<T>(
-    await fetch(`/admin-api/v1${path}`, {
+    await fetch(adminApiUrl(path), {
       method,
       signal: AbortSignal.timeout(20_000),
       headers: {
@@ -240,7 +256,11 @@ export const realAdminRepository = {
   merchants: async (keyword = '', page = 1, pageSize = 20) => {
     const result = await adminRequest<PageResult<Merchant>>(
       '/business/merchants/page',
-      { page, pageSize, query: { keyword } },
+      {
+        page,
+        pageSize,
+        query: { keyword },
+      },
     );
     return { ...result, items: result.items.map(normalizeMerchant) };
   },

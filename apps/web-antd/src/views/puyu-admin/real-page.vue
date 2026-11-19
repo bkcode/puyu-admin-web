@@ -14,6 +14,7 @@ import Dashboard from './real/Dashboard.vue';
 import Designers from './real/Designers.vue';
 import Inventory from './real/Inventory.vue';
 import Merchants from './real/Merchants.vue';
+import MerchantStoreSettings from './real/MerchantStoreSettings.vue';
 import Orders from './real/Orders.vue';
 import Settings from './real/Settings.vue';
 import Tickets from './real/Tickets.vue';
@@ -52,6 +53,10 @@ const page = computed(
     />
     <Billing
       v-else-if="page?.id === 'platform-billing-management'"
+      :key="route.fullPath"
+    />
+    <MerchantStoreSettings
+      v-else-if="page?.id === 'merchant-store-settings'"
       :key="route.fullPath"
     />
     <Settings

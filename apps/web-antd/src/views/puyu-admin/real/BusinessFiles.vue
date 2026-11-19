@@ -149,7 +149,7 @@ async function confirmDownload() {
       request({ fileId: activeFile.value.id }).requestId,
     );
     saveFile(OperationsService.decodeDownload(result));
-    message.success(`下载成功，本次消耗服务额度 ${result.consumedCredits}`);
+    message.success(`已发起下载，本次消耗服务额度 ${result.consumedCredits}`);
     quote.value = undefined;
   } catch (error) {
     fail(error);

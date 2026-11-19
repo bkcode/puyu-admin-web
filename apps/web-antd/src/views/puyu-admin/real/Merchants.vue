@@ -22,11 +22,13 @@ import {
 } from 'ant-design-vue';
 
 import { RealAdminService } from '#/application/realAdminService';
+import { publicImagePreview } from '#/data/publicImageUploadApi';
 import { permission } from '#/infrastructure/permission/permission';
 import { shanghaiDate } from '#/infrastructure/time/shanghaiTime';
 import ApiErrorDialog from '#/ui/pc-web-a/publicUi/api-error-dialog.vue';
 
 import ImageUpload from './ImageUpload.vue';
+import PublicImageUpload from './PublicImageUpload.vue';
 const props = defineProps<{ pageId: string }>();
 const route = useRoute();
 const router = useRouter();
@@ -35,6 +37,8 @@ const current = ref<Merchant>();
 const formRef = ref<FormInstance>();
 const loading = ref(false);
 const saving = ref(false);
+const logoBusy = ref(false);
+const logoScope = ref(0);
 const errorMessage = ref('');
 const keyword = ref('');
 const pageNumber = ref(1);
@@ -58,6 +62,7 @@ const form = reactive<MerchantInput>({
   remark: '',
   introduction: '',
   logoFileId: null,
+  logoUrl: null,
   wechatFileId: null,
 });
 const required = [{ required: true, message: '请填写此项' }];
@@ -87,6 +92,8 @@ function go(pageId: string, id?: string) {
   return router.push({ name: `PuyuAdmin_${pageId}`, query: id ? { id } : {} });
 }
 async function load() {
+  logoScope.value += 1;
+  logoBusy.value = false;
   loading.value = true;
   edit.value = false;
   current.value = undefined;
@@ -100,7 +107,7 @@ async function load() {
       total.value = Number(result.total);
     } else if (typeof route.query.id === 'string') {
       current.value = await RealAdminService.merchant(route.query.id);
-      Object.assign(form, current.value.content);
+      Object.assign(form, { logoUrl: null }, current.value.content);
     } else
       Object.assign(form, {
         name: '',
@@ -116,6 +123,7 @@ async function load() {
         remark: '',
         introduction: '',
         logoFileId: null,
+        logoUrl: null,
         wechatFileId: null,
       });
   } catch (error) {
@@ -125,6 +133,13 @@ async function load() {
   }
 }
 async function save() {
+  if (
+    loading.value ||
+    saving.value ||
+    logoBusy.value ||
+    !permission.canManageMerchants()
+  )
+    return;
   try {
     await formRef.value?.validate();
   } catch (error) {
@@ -134,6 +149,13 @@ async function save() {
         : '请完善标记为必填的字段，并检查手机号和服务日期';
     return;
   }
+  if (
+    loading.value ||
+    saving.value ||
+    logoBusy.value ||
+    !permission.canManageMerchants()
+  )
+    return;
   saving.value = true;
   try {
     const saved = await RealAdminService.saveMerchant(
@@ -151,6 +173,10 @@ async function save() {
     saving.value = false;
   }
 }
+watch(isForm, () => {
+  logoScope.value += 1;
+  logoBusy.value = false;
+});
 watch(() => [props.pageId, route.query.id], load, { immediate: true });
 </script>
 <template>
@@ -288,11 +314,20 @@ watch(() => [props.pageId, route.query.id], load, { immediate: true });
             />
           </Form.Item>
           <Form.Item label="商户Logo">
-            <ImageUpload
-              :model-value="form.logoFileId ? [form.logoFileId] : []"
-              @update:model-value="(ids) => (form.logoFileId = ids[0] ?? null)"
+            <PublicImageUpload
+              :key="logoScope"
+              :model-value="form.logoUrl ? [form.logoUrl] : []"
+              :scope="logoScope"
+              :max="1"
+              replace
+              :disabled="loading || saving || !permission.canManageMerchants()"
+              @update:model-value="(urls) => (form.logoUrl = urls[0] ?? '')"
+              @busy="logoBusy = $event"
               @error="errorMessage = $event"
             />
+            <p v-if="form.logoFileId" class="text-xs text-muted-foreground">
+              原Logo文件ID：{{ form.logoFileId }}（继续保留，清除公开图后回退）
+            </p>
           </Form.Item>
           <Form.Item label="联系人微信二维码">
             <ImageUpload
@@ -317,6 +352,7 @@ watch(() => [props.pageId, route.query.id], load, { immediate: true });
         v-if="permission.canManageMerchants()"
         type="primary"
         :loading="saving"
+        :disabled="loading || logoBusy"
         @click="save"
       >
         {{ current ? '保存修改' : '提交入驻' }}
@@ -364,7 +400,18 @@ watch(() => [props.pageId, route.query.id], load, { immediate: true });
           {{ current.content.enabled ? '启用' : '停用' }}
         </Descriptions.Item>
         <Descriptions.Item label="Logo文件">
-          {{ current.content.logoFileId || '未上传' }}
+          <img
+            v-if="
+              current.content.logoUrl &&
+              publicImagePreview(current.content.logoUrl)
+            "
+            :src="publicImagePreview(current.content.logoUrl)"
+            alt="商户Logo"
+            class="h-24 w-24 object-contain"
+          />
+          <span v-else>{{
+            current.content.logoFileId || '未上传'
+          }}</span>
 </Descriptions.Item><Descriptions.Item label="微信二维码文件">
           {{ current.content.wechatFileId || '未上传' }}
         </Descriptions.Item>

@@ -13,7 +13,13 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     include: [
+      'apps/web-antd/src/data/__tests__/public-images-business-page.test.ts',
+      'apps/web-antd/src/data/__tests__/public-image-upload.test.ts',
+      'apps/web-antd/src/data/__tests__/public-image-upload-page.test.ts',
       'apps/web-antd/src/data/__tests__/real-admin.test.ts',
+      'apps/web-antd/src/data/__tests__/admin-api-origin.test.ts',
+      'apps/web-antd/src/data/__tests__/store-settings.test.ts',
+      'apps/web-antd/src/data/__tests__/store-settings-page.test.ts',
       'apps/web-antd/src/data/__tests__/merchant-service-end.test.ts',
       'apps/web-antd/src/data/__tests__/operations.test.ts',
       'apps/web-antd/src/data/__tests__/local-proxy.test.ts',
@@ -24,6 +30,7 @@ export default defineConfig({
       'apps/web-antd/src/data/__tests__/credit-export-service.test.ts',
       'apps/web-antd/src/data/__tests__/credit-export-page.test.ts',
       'apps/web-antd/src/data/__tests__/download-helper.test.ts',
+      'apps/web-antd/src/data/__tests__/slider-captcha.test.ts',
       'apps/web-antd/src/data/__tests__/qr-page.test.ts',
       'apps/web-antd/src/data/__tests__/workbook.test.ts',
       'apps/web-antd/src/data/__tests__/workbook-page.test.ts',

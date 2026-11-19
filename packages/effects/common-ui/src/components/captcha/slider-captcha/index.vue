@@ -75,8 +75,8 @@ watchEffect(() => {
 function getEventPageX(e: MouseEvent | TouchEvent): number {
   if ('pageX' in e) {
     return e.pageX;
-  } else if ('touches' in e && e.touches[0]) {
-    return e.touches[0].pageX;
+  } else if ('touches' in e) {
+    return e.touches[0]?.pageX ?? e.changedTouches[0]?.pageX ?? 0;
   }
   return 0;
 }

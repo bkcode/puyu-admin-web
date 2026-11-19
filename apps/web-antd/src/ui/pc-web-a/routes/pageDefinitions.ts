@@ -21,6 +21,7 @@ const rows: Array<
   ['platform-billing-management', '入账管理 / 月账目统计', '平台后台', 'list'],
   ['platform-system-settings', '系统设置', '平台后台', 'config'],
   ['cooperation-list', '合作关系列表', '商家后台', 'list'],
+  ['merchant-store-settings', '门店设置', '商家后台', 'config'],
   ['merchant-dashboard', '商户首页', '商家后台', 'dashboard'],
   ['cooperation-detail', '合作关系详情', '商家后台', 'detail'],
   ['cooperation-qrcode', '合作二维码管理', '商家后台', 'config'],

@@ -28,12 +28,8 @@ const upload: UploadProps['customRequest'] = async (options) => {
   if (++pending.value === 1) emit('busy', true);
   try {
     const file = options.file as File;
-    if (
-      !['image/gif', 'image/jpeg', 'image/png', 'image/webp'].includes(
-        file.type,
-      )
-    )
-      throw new Error('请选择PNG、JPEG、WebP或GIF图片');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+      throw new Error('请选择PNG、JPEG或WebP图片');
     if (file.size > 20 * 1024 * 1024) throw new Error('图片最大20MiB');
     const result = await RealAdminService.upload(file);
     emit(
@@ -52,7 +48,7 @@ const upload: UploadProps['customRequest'] = async (options) => {
 </script>
 <template>
   <Upload
-    accept="image/png,image/jpeg,image/webp,image/gif"
+    accept="image/png,image/jpeg,image/webp"
     :disabled="disabled || pending > 0"
     :multiple="multiple"
     :custom-request="upload"
