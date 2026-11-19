@@ -13,7 +13,6 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     include: [
-      'apps/web-antd/src/data/__tests__/production-token-bridge.test.ts',
       'apps/web-antd/src/data/__tests__/public-images-business-page.test.ts',
       'apps/web-antd/src/data/__tests__/public-image-upload.test.ts',
       'apps/web-antd/src/data/__tests__/public-image-upload-page.test.ts',

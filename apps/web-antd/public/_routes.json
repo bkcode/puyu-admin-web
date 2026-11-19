@@ -1,5 +1,0 @@
-{
-  "version": 1,
-  "include": ["/auth-api/v1/oauth2/token"],
-  "exclude": []
-}

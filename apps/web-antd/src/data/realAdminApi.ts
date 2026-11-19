@@ -4,7 +4,7 @@ import {
 } from '#/infrastructure/cache/cacherManager';
 import { shanghaiDate } from '#/infrastructure/time/shanghaiTime';
 
-import { adminApiUrl } from './adminApiOrigin';
+import { adminApiUrl, adminAuthUrl } from './adminApiOrigin';
 import { serializeSkuInput } from './skuSpecifications';
 
 export const isRealAdmin = import.meta.env.VITE_PUYU_DATA_MODE === 'real';
@@ -198,7 +198,8 @@ export async function adminRequest<T>(
 }
 async function oauth(body: Record<string, string>): Promise<TokenResult> {
   const result = await unwrap<TokenResult>(
-    await fetch('/auth-api/v1/oauth2/token', {
+    await fetch(adminAuthUrl(), {
+      credentials: 'omit',
       method: 'POST',
       signal: AbortSignal.timeout(20_000),
       body: new URLSearchParams(body),
